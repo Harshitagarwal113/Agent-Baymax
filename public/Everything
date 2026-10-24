@@ -1,0 +1,784 @@
+# AGENT BAYMAX 🤖🩺 — THE MASTER ARCHITECTURE & CODEBASE BIBLE
+
+> **"Hello. I am Baymax, your personal healthcare companion."**  
+> An autonomous, multimodal AI healthcare and wellness companion designed to monitor physical profiles, analyze meals via computer vision, prescribe clinical nutrition and diet timelines, and enforce hydration habits to optimize daily human well-being.
+
+---
+
+## TABLE OF CONTENTS
+1. [Executive Summary & Core Value Proposition](#1-executive-summary--core-value-proposition)
+2. [Complete Technology Stack & Dependencies](#2-complete-technology-stack--dependencies)
+3. [Full Directory & File System Tree](#3-full-directory--file-system-tree)
+4. [Database Architecture & Complete SQL Schema](#4-database-architecture--complete-sql-schema)
+5. [Mathematical & Clinical Algorithms](#5-mathematical--clinical-algorithms)
+   - [5.1 Mifflin-St Jeor Caloric & Macro Engine](#51-mifflin-st-jeor-caloric--macro-engine)
+   - [5.2 Dynamic Hydration Target Formula](#52-dynamic-hydration-target-formula)
+   - [5.3 Hydration Status & Streak Evaluation](#53-hydration-status--streak-evaluation)
+   - [5.4 Recursive Text Splitter for RAG](#54-recursive-text-splitter-for-rag)
+6. [Core Subsystems & Operational Workflows](#6-core-subsystems--operational-workflows)
+   - [6.1 Streaming Conversational AI & Asynchronous Long-Term Memory](#61-streaming-conversational-ai--asynchronous-long-term-memory)
+   - [6.2 Multimodal Food Vision & Journaling Pipeline](#62-multimodal-food-vision--journaling-pipeline)
+   - [6.3 AI Diet Planner & Client-Side PDF Generation](#63-ai-diet-planner--client-side-pdf-generation)
+   - [6.4 Hydration Assistant & Analytics Cockpit](#64-hydration-assistant--analytics-cockpit)
+   - [6.5 Unified Health Dashboard & Coaching Widgets](#65-unified-health-dashboard--coaching-widgets)
+   - [6.6 RAG Knowledge Ingestion Pipeline](#66-rag-knowledge-ingestion-pipeline)
+   - [6.7 Edge Security, Proxy & Fail-Open Rate Limiting](#67-edge-security-proxy--fail-open-rate-limiting)
+7. [Exhaustive File-by-File Reference Guide](#7-exhaustive-file-by-file-reference-guide)
+8. [API & Server Action Specifications](#8-api--server-action-specifications)
+9. [Environment Variables, Setup & Database Initialization](#9-environment-variables-setup--database-initialization)
+
+---
+
+## 1. EXECUTIVE SUMMARY & CORE VALUE PROPOSITION
+
+Traditional personal health and nutrition tracking suffers from high churn: users abandon tracking because manual ingredient typing, macro calculation, and disconnected hydration notes create extreme cognitive friction.
+
+**Agent Baymax** solves this through an end-to-end autonomous architecture combining:
+- **Zero-Friction Vision Logging**: Users snap a photo of any meal (or attach it in the chat interface). Baymax parses items, calculates portions, estimates macros and calories, evaluates confidence, and commits the entry to the user's journal automatically.
+- **Dynamic Clinical Personalization**: Calculates Basal Metabolic Rate (BMR) and Total Daily Energy Expenditure (TDEE) dynamically using the clinically validated **Mifflin-St Jeor equation**, automatically scaling macro distributions to the user's journey (Fat Loss, Hypertrophy, Maintenance).
+- **Asynchronous Long-Term Memory**: Conversation streams are parsed in the background via non-blocking callbacks (`onFinish`), extracting permanent facts, dietary preferences, and allergies (`agent_memory`) without stalling token generation.
+- **Medically Grounded RAG**: Incorporates verified medical documentation uploaded by administrators, converting documents to 768-dimensional embeddings stored in PostgreSQL with `pgvector` and retrieved using cosine distance similarity.
+- **Smart Hydration Engine**: Scales water targets dynamically with physical weight, activity levels, and a Workout Day sweat recovery toggle (+800ml), tracked through SVG completion rings, Recharts graphs, and streak records.
+- **AI Diet Planner with Direct PDF Export**: Generates full daily/weekly timelines tailored to vegetarian, non-vegetarian, or flexitarian profiles and generates styled multi-page PDF medical reports directly in the client via `jsPDF`, bypassing browser print dialogs.
+
+---
+
+## 2. COMPLETE TECHNOLOGY STACK & DEPENDENCIES
+
+### Core Framework & Runtime
+- **Next.js 16.2.6 (App Router)**: Utilizing React Server Components (RSC), Server Actions for mutations, dynamic routing, and Next.js 16 Edge Proxy architecture.
+- **React 19.2.4**: Built with modern hooks (`useActionState`, `useTransition`, `useRef`, `useEffect`).
+- **TypeScript 5.x**: Strict type safety across all actions, schemas, and UI components.
+
+### Styling, UI & Micro-Animations
+- **Tailwind CSS v4 (`@tailwindcss/postcss`)**: Modern theme variables, HSL and OKLCH color mappings, custom glassmorphism layers.
+- **Base UI (`@base-ui/react`)**: Accessible, unstyled primitives for buttons, inputs, scroll areas, avatars, and progress bars.
+- **Framer Motion 12.4**: Spring-based layout animations, staggered lists, and route transition templates.
+- **Recharts 3.8**: Dual-axis bar charts, area charts, and customizable tooltips for health analytics.
+- **Lucide React 1.17**: Modern iconography across all features and navigation bars.
+- **tw-animate-css 1.4**: Micro-interaction CSS utility transitions.
+
+### AI & Language Models
+- **Vercel AI SDK (`ai` v6.0.193)**: Unified streaming, text generation, and structured object generation (`generateObject`, `streamText`, `embed`, `embedMany`).
+- **`@ai-sdk/google` v3.0.80**: Provider adapter for Google Gemini models.
+- **`@google/genai` v2.7.0**: Google Generative AI client.
+- **Target Models**:
+  - `gemini-3.1-flash-lite`: Primary reasoning, vision analysis, dietary composition, and background memory extraction model.
+  - `embedding-001`: Vector embeddings (768 dimensions) for RAG chunks and similarity search.
+
+### Database, Storage & Authentication
+- **Supabase PostgreSQL**: Relational data storage with UUID primary keys and Foreign Key constraints.
+- **`pgvector` Extension**: PostgreSQL vector extension for storing high-dimensional embeddings with an HNSW cosine similarity index (`vector_cosine_ops`).
+- **`@supabase/ssr` v0.10.3 & `@supabase/supabase-js` v2.106.2**: Server-side and browser cookie-based authentication with automatic token refreshing.
+- **Supabase Storage**: Bucket `food-images` for storing user-uploaded food photos with public read and authenticated write RLS policies.
+
+### Caching, Edge Protection & Document Parsing
+- **Upstash Redis (`@upstash/redis` v1.38 & `@upstash/ratelimit` v2.0.8)**: Sliding window rate limiting on API endpoints with a fail-open architecture.
+- **`pdf-parse` v2.4.5**: Server-side binary PDF text extraction.
+- **`jspdf` v4.2.1**: Programmatic client-side vector PDF document compiler.
+- **`zod` v4.4.3 & `@hookform/resolvers` v5.4**: Schema validation for forms and structured AI completions.
+- **`uuid` v14.0**: Cryptographically strong unique identifier generation.
+- **Vercel Web Analytics & Speed Insights**: Real-time performance monitoring.
+
+---
+
+## 3. FULL DIRECTORY & FILE SYSTEM TREE
+
+```
+Agent-Baymax/
+├── .env.example                               # Environment variable blueprint
+├── .gitignore                                 # Git ignore patterns
+├── AGENTS.md                                  # Next.js 16 breaking change conventions & notes
+├── CLAUDE.md                                  # Developer instructions & core system workflows
+├── README.md                                  # Project pitch deck, specs & quick-start guide
+├── components.json                            # Shadcn UI configuration file
+├── eslint.config.mjs                          # Next.js & TypeScript ESLint configuration
+├── next.config.ts                             # Next.js configuration & HTTP security headers
+├── package.json                               # Dependencies & scripts
+├── postcss.config.mjs                         # PostCSS Tailwind v4 plugin definition
+├── tsconfig.json                              # TypeScript compiler settings & path aliases
+├── public/                                    # Public static assets & documentation
+│   ├── Everything                             # Master project documentation (exact name)
+│   ├── Everything.md                          # Master project documentation (Markdown)
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── supabase/                                  # Database migrations & SQL initialization
+│   ├── init_database.sql                      # Master SQL schema, triggers, RLS, & RPC functions
+│   └── migrations/
+│       ├── 0000_initial_schema.sql            # Base tables, profiles, memory, chat, nutrition, water
+│       ├── 0001_storage_setup.sql             # Storage bucket 'food-images' & RLS policies
+│       ├── 0002_add_serving_size.sql          # Adds serving_size to nutrition_logs
+│       ├── 0003_rag_setup.sql                 # pgvector extension, chunks table, HNSW index & RPC
+│       ├── 0004_profile_metrics.sql           # Adds age, height_cm, gender, activity_level to profiles
+│       ├── 0005_enable_rls_rag.sql            # RLS policies for knowledge_documents & document_chunks
+│       ├── 0006_add_meal_analysis_details.sql # Adds detected_items, confidence to meal_analysis
+│       └── 0007_add_goal_analysis_fields.sql  # Adds starting_weight_kg, ai_analysis, estimated_weeks
+└── src/
+    ├── proxy.ts                               # Next.js 16 Edge proxy (session sync & rate limiter)
+    ├── actions/                               # Next.js Server Actions (mutations & queries)
+    │   ├── auth.ts                            # Login, signup, logout, Google OAuth callback
+    │   ├── dashboard.ts                       # 7-day rolling aggregates for calories, water, macros
+    │   ├── diet.ts                            # Structured 7-day meal timeline generator (Gemini)
+    │   ├── knowledge.ts                       # Admin PDF ingestion, chunking, embedding, vector search
+    │   ├── nutrition.ts                       # Meal image upload, vision analysis, journal fetch
+    │   ├── profile.ts                         # Mifflin-St Jeor engine, macro allocation, AI coach
+    │   └── water.ts                           # Hydration tracking, streaks, timezone bounds, AI coach
+    ├── app/                                   # Next.js App Router
+    │   ├── globals.css                        # Tailwind v4 theme, glassmorphism, root variables
+    │   ├── layout.tsx                         # Root layout, Geist font, ambient glow blobs, Analytics
+    │   ├── page.tsx                           # Public hero landing page
+    │   ├── global-error.tsx                   # Critical error boundary with Baymax reset button
+    │   ├── (auth)/                            # Authentication route group
+    │   │   ├── layout.tsx                     # Auth layout container
+    │   │   ├── login/page.tsx                 # Login form with useActionState
+    │   │   └── signup/page.tsx                # Signup form with confirmation handling
+    │   ├── (protected)/                       # Authenticated route group
+    │   │   ├── layout.tsx                     # Protected shell embedding Navbar
+    │   │   ├── template.tsx                   # Route transition animation wrapper (Framer Motion)
+    │   │   ├── chat/page.tsx                  # Conversational Healthcare Companion page
+    │   │   ├── profile/page.tsx               # User profile, metrics & macro cards
+    │   │   └── dashboard/                     # Master Dashboard routes
+    │   │       ├── page.tsx                   # Unified dashboard with widgets & trend charts
+    │   │       ├── diet-planner/page.tsx      # AI Diet Planner & PDF export page
+    │   │       ├── nutrition/page.tsx         # Smart Meal Logger & Today's Meals feed
+    │   │       ├── water/page.tsx             # Hydration Dashboard cockpit & analytics
+    │   │       └── admin/knowledge/page.tsx   # Admin RAG PDF upload & vector training page
+    │   ├── api/
+    │   │   └── chat/route.ts                  # Streaming chat API with memory & vision hooks
+    │   └── auth/
+    │       └── callback/route.ts              # OAuth callback handler & profile check redirect
+    ├── components/
+    │   ├── layout/
+    │   │   └── Navbar.tsx                     # Floating glassmorphic header & mobile bottom dock
+    │   ├── ui/                                # Reusable UI atom controls
+    │   │   ├── avatar.tsx                     # Base UI avatar with status badge support
+    │   │   ├── button.tsx                     # Base UI button with CVA variants
+    │   │   ├── card.tsx                       # Base UI card with header, title, content, footer
+    │   │   ├── input.tsx                      # Base UI input control
+    │   │   ├── label.tsx                      # Accessible label control
+    │   │   ├── progress.tsx                   # Base UI progress bar with custom indicator colors
+    │   │   └── scroll-area.tsx                # Base UI scroll area with custom scrollbars
+    │   └── features/                          # Domain-specific components
+    │       ├── auth/
+    │       │   └── GoogleLoginButton.tsx      # Google OAuth button with SVG logo
+    │       ├── chat/
+    │       │   ├── ChatInterface.tsx          # Real-time chat client with photo picker & auto-scroll
+    │       │   └── ChatMessage.tsx            # Markdown message bubble with avatars & image cards
+    │       ├── dashboard/
+    │       │   ├── Dashboard.tsx              # Master dashboard layout coordinator
+    │       │   └── widgets/
+    │       │       ├── CalorieWidget.tsx      # Caloric balance progress widget
+    │       │       ├── MacrosProgressChart.tsx# Macro completion bar chart with dynamic color tiers
+    │       │       ├── RecentActivities.tsx   # Chronological activity timeline with meal photos
+    │       │       ├── WaterWidget.tsx        # Hydration progress widget
+    │       │       └── WeeklyTrendsChart.tsx  # Calories vs Hydration dual-axis bar chart
+    │       ├── diet/
+    │       │   └── DietPlanner.tsx            # AI Diet Planner, direct jsPDF generator & tabs
+    │       ├── nutrition/
+    │       │   ├── MacroOverview.tsx          # Daily macro distribution progress bars
+    │       │   ├── MealFeed.tsx               # Meal feed with item breakdown tables & confidence
+    │       │   └── SmartMealLogger.tsx        # Multimodal meal log form (camera/gallery/text)
+    │       ├── profile/
+    │       │   └── ProfileForm.tsx            # React Hook Form for physical metrics & goals
+    │       └── water/
+    │           └── HydrationDashboard.tsx     # Hydration cockpit, SVG ring, workouts & Recharts
+    └── lib/
+        ├── ratelimit.ts                       # Upstash Redis connection & sliding window limiters
+        ├── utils.ts                           # Tailwind class merger utility
+        ├── gemini/
+        │   ├── embedding.ts                   # Text embedding generators via embedding-001
+        │   ├── index.ts                       # Google Gen AI client initializer
+        │   ├── memory.ts                      # Persistent memory fetching & async extraction
+        │   └── nutrition.ts                   # Multimodal Gemini vision parser (generateObject)
+        ├── rag/
+        │   └── chunker.ts                     # Recursive sentence-aware text splitter
+        └── supabase/
+            ├── client.ts                      # Browser Supabase client
+            ├── middleware.ts                  # Session updater & route guard
+            └── server.ts                      # Server-side Supabase client with cookie handlers
+```
+
+---
+
+## 4. DATABASE ARCHITECTURE & COMPLETE SQL SCHEMA
+
+The database is built on PostgreSQL with **Row Level Security (RLS)** enabled across every table to ensure users can only access their own private medical records.
+
+### Relational Entity-Relationship Diagram
+
+```
+[auth.users] (Supabase Auth)
+     │
+     ▼ (1:1 ON DELETE CASCADE)
+[public.profiles] ───(1:1)───► [public.profile_settings]
+     │
+     ├───────(1:1)───────────► [public.health_goals]
+     │
+     ├───────(1:N)───────────► [public.water_logs]
+     │
+     ├───────(1:N)───────────► [public.nutrition_logs] ───(1:1)───► [public.meal_analysis]
+     │
+     ├───────(1:N)───────────► [public.agent_memory]
+     │
+     └───────(1:N)───────────► [public.chat_sessions] ───(1:N)───► [public.chat_messages]
+
+[public.knowledge_documents] ───(1:N ON DELETE CASCADE)───► [public.document_chunks]
+```
+
+### Complete Database Schema Definitions
+
+```sql
+-- Enable Extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "vector";
+
+-- 1. Profiles (Extends auth.users)
+CREATE TABLE public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT UNIQUE NOT NULL,
+    full_name TEXT,
+    avatar_url TEXT,
+    role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    timezone TEXT DEFAULT 'UTC',
+    age INTEGER,
+    height_cm NUMERIC(5,2),
+    gender TEXT CHECK (gender IN ('male', 'female', 'other')),
+    activity_level TEXT CHECK (activity_level IN ('sedentary', 'lightly_active', 'moderately_active', 'very_active', 'extra_active')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 2. Profile Settings
+CREATE TABLE public.profile_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL UNIQUE,
+    theme TEXT DEFAULT 'system',
+    notifications_enabled BOOLEAN DEFAULT true,
+    weekly_report_enabled BOOLEAN DEFAULT true,
+    measurement_system TEXT DEFAULT 'metric' CHECK (measurement_system IN ('metric', 'imperial')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 3. Health Goals & Dynamic Analytics
+CREATE TABLE public.health_goals (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    daily_calorie_target INTEGER,
+    daily_protein_target INTEGER,
+    daily_carbs_target INTEGER,
+    daily_fat_target INTEGER,
+    daily_water_target_ml INTEGER DEFAULT 2000,
+    current_weight_kg NUMERIC(5,2),
+    weight_goal_kg NUMERIC(5,2),
+    starting_weight_kg NUMERIC(5,2),
+    goal_type TEXT CHECK (goal_type IN ('lose_weight', 'maintain', 'build_muscle')),
+    ai_analysis TEXT,
+    estimated_weeks TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 4. Chat Sessions & Messages
+CREATE TABLE public.chat_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    title TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE public.chat_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    session_id UUID REFERENCES public.chat_sessions(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    role TEXT CHECK (role IN ('user', 'assistant', 'system')) NOT NULL,
+    content TEXT NOT NULL,
+    tokens_used INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 5. Long-Term Agent Memory
+CREATE TABLE public.agent_memory (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    category TEXT NOT NULL, -- 'allergies', 'preferences', 'health_goals', 'dietary', 'medical', 'exercise', 'favorites'
+    content TEXT NOT NULL,
+    importance INTEGER DEFAULT 1 CHECK (importance BETWEEN 1 AND 5),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 6. Nutrition Logs
+CREATE TABLE public.nutrition_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    meal_type TEXT CHECK (meal_type IN ('breakfast', 'lunch', 'dinner', 'snack')),
+    food_name TEXT NOT NULL,
+    serving_size TEXT,
+    calories INTEGER NOT NULL,
+    protein_g NUMERIC(5,2),
+    carbs_g NUMERIC(5,2),
+    fat_g NUMERIC(5,2),
+    logged_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 7. Meal Analysis (Multimodal AI Output)
+CREATE TABLE public.meal_analysis (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nutrition_log_id UUID REFERENCES public.nutrition_logs(id) ON DELETE CASCADE NOT NULL UNIQUE,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    health_score INTEGER CHECK (health_score BETWEEN 0 AND 100),
+    ai_feedback TEXT,
+    image_url TEXT,
+    detected_items JSONB,
+    confidence INTEGER CHECK (confidence BETWEEN 0 AND 100),
+    confidence_explanation TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 8. Water Logs
+CREATE TABLE public.water_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    amount_ml INTEGER NOT NULL,
+    logged_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 9. RAG Knowledge Documents & Vector Chunks
+CREATE TABLE public.knowledge_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    filename TEXT NOT NULL,
+    content_type TEXT,
+    size_bytes BIGINT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE public.document_chunks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    document_id UUID REFERENCES public.knowledge_documents(id) ON DELETE CASCADE NOT NULL,
+    content TEXT NOT NULL,
+    embedding VECTOR(768) NOT NULL, -- Gemini text-embedding-004 / embedding-001 dimension
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Fast Vector Similarity Search Index (HNSW)
+CREATE INDEX ON public.document_chunks USING hnsw (embedding vector_cosine_ops);
+
+-- Cosine Similarity Search RPC Function
+CREATE OR REPLACE FUNCTION match_document_chunks (
+    query_embedding VECTOR(768),
+    match_threshold FLOAT,
+    match_count INT
+)
+RETURNS TABLE (
+    id UUID,
+    document_id UUID,
+    content TEXT,
+    similarity FLOAT
+)
+LANGUAGE sql STABLE
+AS $$
+    SELECT
+        document_chunks.id,
+        document_chunks.document_id,
+        document_chunks.content,
+        1 - (document_chunks.embedding <=> query_embedding) AS similarity
+    FROM document_chunks
+    WHERE 1 - (document_chunks.embedding <=> query_embedding) > match_threshold
+    ORDER BY document_chunks.embedding <=> query_embedding
+    LIMIT match_count;
+$$;
+
+-- Storage Setup: Bucket 'food-images'
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('food-images', 'food-images', true)
+ON CONFLICT (id) DO NOTHING;
+```
+
+---
+
+## 5. MATHEMATICAL & CLINICAL ALGORITHMS
+
+### 5.1 Mifflin-St Jeor Caloric & Macro Engine
+Calculated in [[src/actions/profile.ts](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/actions/profile.ts)]:
+
+#### Step 1: Basal Metabolic Rate (BMR)
+$$\text{BMR}_{\text{Male}} = 10 \times \text{weight (kg)} + 6.25 \times \text{height (cm)} - 5 \times \text{age (yrs)} + 5$$
+$$\text{BMR}_{\text{Female}} = 10 \times \text{weight (kg)} + 6.25 \times \text{height (cm)} - 5 \times \text{age (yrs)} - 161$$
+$$\text{BMR}_{\text{Other}} = \frac{\text{BMR}_{\text{Male}} + \text{BMR}_{\text{Female}}}{2}$$
+
+#### Step 2: Total Daily Energy Expenditure (TDEE)
+$$\text{TDEE} = \text{BMR} \times \text{Activity Multiplier}$$
+- Sedentary: $1.2$
+- Lightly Active (1–3 days/week): $1.375$
+- Moderately Active (3–5 days/week): $1.55$
+- Very Active (6–7 days/week): $1.725$
+- Extra Active (physical labor & training): $1.9$
+
+#### Step 3: Caloric Adjustment by Goal
+- **Lose Weight**:
+  - Delta $< 5\text{ kg}$: $-350\text{ kcal}$
+  - Delta $5\text{--}15\text{ kg}$: $-500\text{ kcal}$
+  - Delta $> 15\text{ kg}$: $-600\text{ kcal}$
+  - Obesity adjustment ($\text{BMI} > 30\text{ and Delta} > 15\text{ kg}$): Safe deficit of $-700\text{ kcal}$
+  - Lean protection ($\text{BMI} < 22$): Deficit limited to maximum $-300\text{ kcal}$
+  - Absolute medical minimum limit: $\max(\text{Calculated}, 1200\text{ kcal})$
+- **Build Muscle**:
+  - Delta $< 5\text{ kg}$: $+200\text{ kcal}$
+  - Delta $\ge 5\text{ kg}$: $+350\text{ kcal}$
+- **Maintain**: Exactly $0\text{ kcal}$ adjustment.
+
+#### Step 4: Macronutrient Allocation
+- **Protein**:
+  - Lose Weight: $2.0\text{ g/kg}$ of body weight (preserves lean mass in deficit)
+  - Build Muscle: $2.2\text{ g/kg}$ of body weight (supports muscular hypertrophy)
+  - Maintain: $1.8\text{ g/kg}$ of body weight
+- **Fat**:
+  - Lose Weight: $20\%$ of target calories ($\text{Grams} = \frac{\text{Target Calories} \times 0.20}{9}$)
+  - Build Muscle & Maintain: $25\%$ of target calories ($\text{Grams} = \frac{\text{Target Calories} \times 0.25}{9}$)
+- **Carbohydrates**:
+  - Fills the remaining caloric energy budget:
+    $$\text{Carbs (g)} = \max\left(\frac{\text{Target Calories} - (\text{Protein g} \times 4) - (\text{Fat g} \times 9)}{4}, 50\text{ g}\right)$$
+
+#### Step 5: Timeline Estimation
+- Fat Loss: Rate of $0.5\text{--}1.0\text{ kg/week} \implies \text{Weeks} = \left[\frac{|\Delta|}{1.0}, \frac{|\Delta|}{0.5}\right]$
+- Muscle Gain: Rate of $0.25\text{--}0.5\text{ kg/week} \implies \text{Weeks} = \left[\frac{\Delta}{0.5}, \frac{\Delta}{0.25}\right]$
+
+---
+
+### 5.2 Dynamic Hydration Target Formula
+Calculated in [[src/components/features/water/HydrationDashboard.tsx](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/components/features/water/HydrationDashboard.tsx)]:
+
+$$\text{Daily Target (ml)} = \text{Baseline} + \text{Activity Increment} + \text{Goal Increment} + \text{Workout Recovery}$$
+1. **Baseline**: $\text{Current Weight (kg)} \times 35\text{ ml/kg}$ (minimum default $2000\text{ ml}$).
+2. **Activity Level Add-on**:
+   - Sedentary: $+0\text{ ml}$
+   - Lightly Active: $+350\text{ ml}$
+   - Moderately Active: $+500\text{ ml}$
+   - Very Active / Extra Active: $+750\text{ ml}$
+3. **Goal Add-on**:
+   - Lose Weight: $+250\text{ ml}$ (promotes satiety and metabolic clearance)
+   - Build Muscle: $+500\text{ ml}$ (cellular hydration and protein synthesis)
+   - Maintain: $+0\text{ ml}$
+4. **Workout Recovery Toggle**: Toggling "Workout Day" adds $+800\text{ ml}$ for sweat and electrolyte balance recovery.
+5. Final target rounded to the nearest $100\text{ ml}$.
+
+---
+
+### 5.3 Hydration Status & Streak Evaluation
+- **Completion Status**:
+  - $\text{Intake} \ge 100\%$: `🟢 Excellent`
+  - $75\% \le \text{Intake} < 100\%$: `🔵 Good`
+  - $40\% \le \text{Intake} < 75\%$: `🟠 Behind Schedule`
+  - $\text{Intake} < 40\%$: `🔴 Dehydrated`
+- **Streak Calculation**: Aggregates water logs grouped by date in the user's local timezone. Iterates backwards from today: if today's goal is met, streak continues; if today is not yet met, yesterday is evaluated to allow today to be completed without resetting. Best streak tracks the longest continuous block of goal-attained days.
+
+---
+
+### 5.4 Recursive Text Splitter for RAG
+Implemented in [[src/lib/rag/chunker.ts](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/lib/rag/chunker.ts)]:
+- Splits continuous document text into chunks of target size $1000$ characters with $200$ characters overlap.
+- Looks backwards from chunk boundaries for natural breaking points:
+  1. Period and space (`. `) occurring after the midpoint of the search window.
+  2. Space (` `) to avoid cutting words in half.
+- Preserves full sentences and contextual continuity for vector embedding generation.
+
+---
+
+## 6. CORE SUBSYSTEMS & OPERATIONAL WORKFLOWS
+
+### 6.1 Streaming Conversational AI & Asynchronous Long-Term Memory
+- **Endpoint**: `/api/chat` (POST)
+- **Model**: `gemini-3.1-flash-lite` via `streamText`
+- **Flow**:
+  1. Authenticates user session and token via Supabase SSR.
+  2. Fetches user memories from `agent_memory` and formats them into the system prompt:
+     ```
+     IMPORTANT USER CONTEXT (Remember this):
+     - [ALLERGIES] User is severely allergic to peanuts
+     - [PREFERENCES] Prefers high-protein vegetarian meals
+     ```
+  3. Executes vector similarity search (`match_document_chunks`) on the latest user message to retrieve relevant clinical guide excerpts.
+  4. If a meal photo URL is passed in the request body, executes vision analysis, commits the meal log, and passes the result into the chat prompt.
+  5. Limits context window to the last 10 messages for token efficiency.
+  6. Starts text streaming to the client.
+  7. **Non-Blocking Callback (`onFinish`)**: Passes full history to [[extractAndStoreMemory](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/lib/gemini/memory.ts)], which executes `generateObject` against `memoryExtractionSchema` and updates `agent_memory` (INSERT, UPDATE, DELETE) without increasing stream latency.
+
+---
+
+### 6.2 Multimodal Food Vision & Journaling Pipeline
+- **Modules**: [[src/lib/gemini/nutrition.ts](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/lib/gemini/nutrition.ts)], [[src/actions/nutrition.ts](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/actions/nutrition.ts)]
+- **Flow**:
+  1. User submits text description and/or image file.
+  2. File validation checks size ($\le 5\text{MB}$) and MIME type (`image/jpeg`, `image/png`, `image/webp`, `image/gif`).
+  3. Uploads file to Supabase Storage bucket `food-images` under path `{user_id}/{uuid}.{ext}` and retrieves public URL.
+  4. Loads user profile and allergies as context.
+  5. Calls Gemini Vision with strict Zod schema enforcing:
+     - `food_name`, `serving_size`, `calories`, `protein_g`, `carbs_g`, `fat_g`, `health_score` (0–100), `ai_feedback`
+     - `confidence` (0–100) and `confidence_explanation` (details if dressings or ingredients cannot be verified)
+     - `detected_items`: Array of sub-items whose calories and macros must sum up to the total.
+  6. Writes records to `nutrition_logs` and `meal_analysis` with database schema fallback support.
+
+---
+
+### 6.3 AI Diet Planner & Client-Side PDF Generation
+- **Modules**: [[src/actions/diet.ts](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/actions/diet.ts)], [[src/components/features/diet/DietPlanner.tsx](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/components/features/diet/DietPlanner.tsx)]
+- **Flow**:
+  1. Reads profile metrics, macro targets, allergies, and preference toggle (`veg`, `non-veg`, `mix`).
+  2. Gemini generates structured 6-meal timeline (Breakfast, Morning Snack, Lunch, Evening Snack, Dinner, Bedtime Snack) aligning calories and macros within 5–10% of targets.
+  3. Renders interactive timeline cards with item lists, portion estimates, and Baymax empathetic rationales.
+  4. **Direct PDF Generation**: When clicked, `jsPDF` draws header banners, user profile summaries, meal timeline cards, macro tables, and Baymax consultation notes directly to an A4 canvas and triggers an immediate download (`baymax-diet-plan-{preference}.pdf`).
+  5. **Future-Ready Workspace**: Tabs for Grocery List aggregation, 7-Day Weekly Calendar locks, Cooking Recipes, and an AI Shopping Assistant.
+
+---
+
+### 6.4 Hydration Assistant & Analytics Cockpit
+- **Modules**: [[src/actions/water.ts](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/actions/water.ts)], [[src/components/features/water/HydrationDashboard.tsx](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/components/features/water/HydrationDashboard.tsx)]
+- **Flow**:
+  1. Calculates dynamic daily targets based on body weight, activity, and workout state.
+  2. Renders dynamic SVG completion ring with circular stroke-dashoffset transitions.
+  3. Provides one-click quick add presets (+250ml, +500ml, +750ml, +1L) and custom inputs.
+  4. Displays a vertical chronological log timeline with deletion support.
+  5. Renders a Recharts area graph with goal and average reference lines.
+  6. Displays streak and achievement cards: Current Streak, Longest Streak, Weekly Volume, Goal Completion Rate.
+  7. Invokes Gemini to generate real-time clinical hydration advice and trend insights.
+
+---
+
+### 6.5 Unified Health Dashboard & Coaching Widgets
+- **Modules**: [[src/app/(protected)/dashboard/page.tsx](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/app/(protected)/dashboard/page.tsx)], [[src/components/features/dashboard/Dashboard.tsx](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/components/features/dashboard/Dashboard.tsx)]
+- **Flow**:
+  1. Fetches water, nutrition, rolling weekly data, and profile metrics in parallel via `Promise.all`.
+  2. **Welcome Card**: Ambient gradient glow hero displaying current hydration and caloric completion percentages.
+  3. **Baymax Health Coaching Card**: Displays AI diagnostic assessment tailored to the user's goal journey.
+  4. **Goal Progress Widget**: Renders starting weight, current weight, target weight, percentage progress bar, BMI status badge, and estimated weeks to completion.
+  5. **Top Metric Widgets**: CalorieWidget and WaterWidget displaying consumed vs. target figures.
+  6. **Weekly Trends Chart**: Recharts dual-axis bar chart comparing calories and water against goal lines, accompanied by dynamic coaching alerts.
+  7. **Recent Activities**: Chronological timeline displaying logged meals with food photo thumbnails and logged water.
+  8. **Macro Completion Progress**: Color-coded bar chart displaying daily macro achievement percentages (Red $<30\%$, Orange $30\text{--}70\%$, Green $\ge 70\%$).
+
+---
+
+### 6.6 RAG Knowledge Ingestion Pipeline
+- **Modules**: [[src/actions/knowledge.ts](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/actions/knowledge.ts)], [[src/app/(protected)/dashboard/admin/knowledge/page.tsx](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/app/(protected)/dashboard/admin/knowledge/page.tsx)]
+- **Flow**:
+  1. Administrator uploads PDF guide ($\le 10\text{MB}$) via drag-and-drop.
+  2. Server action applies expensive rate limit check (`rl_knowledge_{user_id}`).
+  3. Parses PDF binary buffer with `pdf-parse` to extract text.
+  4. Splits text into 1000-character chunks with 200-character overlap using [[chunkText](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/lib/rag/chunker.ts)].
+  5. Generates batch vector embeddings via Gemini `embedding-001` (768 dimensions).
+  6. Saves document record into `knowledge_documents` and chunk rows with vector embeddings into `document_chunks`.
+
+---
+
+### 6.7 Edge Security, Proxy & Fail-Open Rate Limiting
+- **Modules**: [[src/proxy.ts](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/proxy.ts)], [[src/lib/ratelimit.ts](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/lib/ratelimit.ts)]
+- **Flow**:
+  1. Next.js proxy executes session updates via [[updateSession](file:///c:/Users/lenov/OneDrive/Desktop/HARSHIT/Projects/Agent%20Baymax/src/lib/supabase/middleware.ts)] to synchronize auth cookies across edge and server components.
+  2. Route protection redirects unauthenticated requests for `/dashboard`, `/profile`, or `/chat` to `/login`.
+  3. Requests to AI endpoints (`/api/chat`) evaluate client IP against an Upstash Redis sliding window limiter (10 requests per 10 seconds).
+  4. Expensive actions (meal vision, knowledge ingestion) apply per-user limiters (5 requests per 60 seconds).
+  5. **Fail-Open Design**: If Redis credentials are absent (local development) or Redis throws an error, the limiter fails open (`return true`) so valid user requests are never blocked.
+
+---
+
+## 7. EXHAUSTIVE FILE-BY-FILE REFERENCE GUIDE
+
+### Root Configuration Files
+- **`package.json`**: Root configuration declaring project name, version, build scripts (`dev`, `build`, `start`, `lint`), and all npm dependencies.
+- **`next.config.ts`**: Configures strict HTTP security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`).
+- **`tsconfig.json`**: Compiler configuration targeting `ES2017`, `bundler` resolution, strict mode, and path alias `@/*` -> `./src/*`.
+- **`components.json`**: Shadcn UI styling definitions configured for `base-nova` style with CSS variables.
+- **`eslint.config.mjs`**: Flat configuration extending Next.js core web vitals and TypeScript rules.
+- **`postcss.config.mjs`**: Configures `@tailwindcss/postcss` for Tailwind v4.
+- **`.env.example`**: Documents required environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `GEMINI_API_KEY`).
+- **`CLAUDE.md`**: Developer brain guide covering workflow commands, architecture directories, and styling guidelines.
+- **`README.md`**: Project documentation, pitch deck, architecture diagrams, and getting started instructions.
+
+### Database Files (`supabase/`)
+- **`supabase/init_database.sql`**: Comprehensive SQL database schema script creating tables, foreign keys, triggers, auto-user-creation handler, RLS policies, `food-images` bucket policies, pgvector extension, HNSW index, and `match_document_chunks` RPC function.
+- **`supabase/migrations/0000_initial_schema.sql`**: Initial schema definition for base tables and indexes.
+- **`supabase/migrations/0001_storage_setup.sql`**: Creates `food-images` storage bucket and RLS policies.
+- **`supabase/migrations/0002_add_serving_size.sql`**: Adds `serving_size` column to `nutrition_logs`.
+- **`supabase/migrations/0003_rag_setup.sql`**: Initializes `vector` extension, `knowledge_documents`, `document_chunks`, HNSW index, and `match_document_chunks` RPC.
+- **`supabase/migrations/0004_profile_metrics.sql`**: Adds `age`, `height_cm`, `gender`, and `activity_level` to `profiles`.
+- **`supabase/migrations/0005_enable_rls_rag.sql`**: Adds RLS policies for RAG knowledge tables.
+- **`supabase/migrations/0006_add_meal_analysis_details.sql`**: Adds `detected_items` (JSONB), `confidence`, and `confidence_explanation` to `meal_analysis`.
+- **`supabase/migrations/0007_add_goal_analysis_fields.sql`**: Adds `starting_weight_kg`, `ai_analysis`, and `estimated_weeks` to `health_goals`.
+
+### Edge & Security (`src/`)
+- **`src/proxy.ts`**: Edge proxy running on all non-static paths. Updates Supabase sessions and enforces sliding window rate limiting on `/api/chat`.
+
+### System Utilities (`src/lib/`)
+- **`src/lib/utils.ts`**: Exports `cn(...)` utility merging Tailwind CSS classes via `clsx` and `tailwind-merge`.
+- **`src/lib/ratelimit.ts`**: Connects to Upstash Redis and defines `standardRateLimiter` (10 req/10s) and `expensiveRateLimiter` (5 req/60s) with a fail-open execution wrapper.
+- **`src/lib/gemini/index.ts`**: Instantiates `@google/genai` client using `GEMINI_API_KEY` and exports default model helper (`gemini-3.1-flash-lite`).
+- **`src/lib/gemini/embedding.ts`**: Exports `generateQueryEmbedding` (single query) and `generateDocumentEmbeddings` (batch chunks) using `embedding-001` (768 dimensions).
+- **`src/lib/gemini/memory.ts`**: Defines `AgentMemory` interface, `getUserMemories`, `formatMemoriesForPrompt`, and `extractAndStoreMemory` (asynchronous memory extraction engine using `generateObject`).
+- **`src/lib/gemini/nutrition.ts`**: Implements multimodal meal analysis via `analyzeMeal`, parsing image buffers and text descriptions into structured nutritional breakdowns using `gemini-3.1-flash-lite`.
+- **`src/lib/rag/chunker.ts`**: Implements recursive, sentence-aware text chunking with configurable overlap.
+- **`src/lib/supabase/client.ts`**: Exports `createClient()` using `@supabase/ssr` `createBrowserClient`.
+- **`src/lib/supabase/server.ts`**: Exports async `createClient()` using `@supabase/ssr` `createServerClient` with `next/headers` cookie store.
+- **`src/lib/supabase/middleware.ts`**: Exports `updateSession(request)` for session cookie refresh and route protection.
+
+### Server Actions (`src/actions/`)
+- **`src/actions/auth.ts`**: Exports `login`, `signup`, `logout`, and `loginWithGoogle` Server Actions with profile-completion redirection.
+- **`src/actions/dashboard.ts`**: Exports `getDashboardData()` aggregating 7-day rolling totals for calories, water, and macros, and returning the 5 most recent activities.
+- **`src/actions/diet.ts`**: Exports `generateDietPlanAction(...)` which invokes Gemini to construct a structured daily meal plan aligned with user calories, macros, and dietary restrictions.
+- **`src/actions/knowledge.ts`**: Exports `uploadKnowledgeDocument` (PDF parsing, chunking, embedding, vector database insert), `retrieveRelevantKnowledge` (vector search via RPC), and `getKnowledgeDocuments`.
+- **`src/actions/nutrition.ts`**: Exports `logMealAction` (image validation, Supabase Storage upload, Gemini vision analysis, database write) and `getDailyNutrition` (timezone-normalized daily meal queries).
+- **`src/actions/profile.ts`**: Exports `getProfileData()` and `updateProfile(data)` (executing the Mifflin-St Jeor engine, goal consistency checks, macro allocation, and Gemini AI health summary generation).
+- **`src/actions/water.ts`**: Exports `addWaterIntake`, `getTodayWater`, `getWaterGoal`, `getWeeklyWaterAnalytics`, `getWaterStreak`, `deleteWaterLog`, `getTodayWaterLogs`, `getWaterCoachingAndInsightsAction`, and `updateWaterGoalAction`.
+
+### App Router Routes (`src/app/`)
+- **`src/app/globals.css`**: Tailwind v4 styling with CSS variables for light/dark themes, chart colors, radius scales, and custom glassmorphism classes (`.glass`, `.glass-card`, `.glass-panel`).
+- **`src/app/layout.tsx`**: Root HTML layout embedding Geist Sans/Mono fonts, liquid glow ambient blobs, Vercel Analytics, and Speed Insights.
+- **`src/app/page.tsx`**: Public landing page introducing Baymax with feature cards and CTA buttons.
+- **`src/app/global-error.tsx`**: Global client error boundary component rendering Baymax "critical malfunction" interface with diagnostic reset button.
+- **`src/app/(auth)/layout.tsx`**: Centered flex layout wrapper for login and signup screens.
+- **`src/app/(auth)/login/page.tsx`**: Client login interface using `useActionState(login)` with session storage cleanup.
+- **`src/app/(auth)/signup/page.tsx`**: Client signup interface using `useActionState(signup)` with email confirmation handling.
+- **`src/app/(protected)/layout.tsx`**: Protected application shell embedding the responsive `Navbar`.
+- **`src/app/(protected)/template.tsx`**: Framer Motion route transition animation wrapper.
+- **`src/app/(protected)/chat/page.tsx`**: Authenticated container rendering `ChatInterface`.
+- **`src/app/(protected)/dashboard/page.tsx`**: Server component fetching water, nutrition, rolling weekly data, and profile metrics in parallel, passing them to `Dashboard`.
+- **`src/app/(protected)/dashboard/diet-planner/page.tsx`**: Server component fetching user profile and allergies for `DietPlanner`.
+- **`src/app/(protected)/dashboard/nutrition/page.tsx`**: Nutrition tracking view rendering `SmartMealLogger`, `MacroOverview`, and `MealFeed`.
+- **`src/app/(protected)/dashboard/water/page.tsx`**: Server component fetching hydration totals, goals, streaks, logs, and analytics for `HydrationDashboard`.
+- **`src/app/(protected)/dashboard/admin/knowledge/page.tsx`**: Admin PDF upload page for training Baymax's RAG knowledge base.
+- **`src/app/(protected)/profile/page.tsx`**: Physical profile settings view rendering `ProfileForm` and current macro targets.
+- **`src/app/api/chat/route.ts`**: Streaming chat completion route integrating memory injection, RAG knowledge retrieval, multimodal photo attachments, and non-blocking background memory extraction.
+- **`src/app/auth/callback/route.ts`**: OAuth callback route exchanging auth codes for sessions and redirecting based on profile completeness.
+
+### Layout & UI Atom Components (`src/components/`)
+- **`src/components/layout/Navbar.tsx`**: Floating glassmorphic header with navigation links (Dashboard, Nutrition, Diet Planner, Water, Baymax Chat, Profile) and mobile bottom navigation dock.
+- **`src/components/ui/button.tsx`**: Base UI button wrapper with class-variance-authority variants and sizes.
+- **`src/components/ui/card.tsx`**: Flexible card container and sub-components (`CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`, `CardAction`).
+- **`src/components/ui/input.tsx`**: Base UI input component with styled focus rings.
+- **`src/components/ui/label.tsx`**: Accessible form label primitive.
+- **`src/components/ui/progress.tsx`**: Progress bar component with customizable indicator color.
+- **`src/components/ui/scroll-area.tsx`**: Scroll area with custom themed scrollbar thumbs.
+- **`src/components/ui/avatar.tsx`**: Avatar component with image, fallback initials, and status badge support.
+
+### Feature Components (`src/components/features/`)
+- **`src/components/features/auth/GoogleLoginButton.tsx`**: Google OAuth button with SVG branding and loading spinner state.
+- **`src/components/features/chat/ChatMessage.tsx`**: Chat message bubble component with Markdown formatting, avatar badges, image previews, and spring entrance animations.
+- **`src/components/features/chat/ChatInterface.tsx`**: Real-time conversational interface with streaming reader, photo attachment picker, auto-scroll tracking, and session storage persistence.
+- **`src/components/features/dashboard/Dashboard.tsx`**: Master dashboard view coordinating welcome hero, goal progress bar, BMI calculator, widgets, and charts.
+- **`src/components/features/dashboard/widgets/CalorieWidget.tsx`**: Caloric balance card showing consumed vs. goal calories with animated progress bar.
+- **`src/components/features/dashboard/widgets/WaterWidget.tsx`**: Hydration widget showing consumed vs. goal liters with progress bar.
+- **`src/components/features/dashboard/widgets/RecentActivities.tsx`**: Chronological activity list showing logged meals with photo thumbnails and water entries.
+- **`src/components/features/dashboard/widgets/WeeklyTrendsChart.tsx`**: Dual-axis Recharts bar chart comparing calories and water against goal reference lines with dynamic coaching alerts.
+- **`src/components/features/dashboard/widgets/MacrosProgressChart.tsx`**: Recharts bar chart showing macro achievement percentages with color scaling (Red $<30\%$, Orange $30\text{--}70\%$, Green $\ge 70\%$).
+- **`src/components/features/diet/DietPlanner.tsx`**: Complete AI Diet Planner with rotating status messages, dietary preference selector, meal timeline cards, direct jsPDF exporter, grocery checklist, weekly calendar locks, cooking recipes, and AI shopping assistant.
+- **`src/components/features/nutrition/MacroOverview.tsx`**: Color-coded progress bars for daily Calories, Protein, Carbohydrates, and Fats.
+- **`src/components/features/nutrition/MealFeed.tsx`**: Interactive meal feed rendering uploaded food photos, AI health scores, Markdown feedback, confidence indicators, and an expandable ingredient breakdown table.
+- **`src/components/features/nutrition/SmartMealLogger.tsx`**: Text description and image upload form with preview thumbnail and camera/gallery triggers.
+- **`src/components/features/profile/ProfileForm.tsx`**: React Hook Form with Zod validation for physical metrics (age, gender, height, weight, target weight, activity, goals, water).
+- **`src/components/features/water/HydrationDashboard.tsx`**: Complete hydration cockpit with SVG circular completion ring, dynamic workout toggle formula, quick add presets, timeline with delete support, Recharts area graph, and gamified streak cards.
+
+---
+
+## 8. API & SERVER ACTION SPECIFICATIONS
+
+### 1. Chat Completion API (`POST /api/chat`)
+- **Request Body**:
+  ```json
+  {
+    "messages": [
+      { "role": "user", "content": "How much protein should I eat after my workout?" }
+    ],
+    "imageUrl": "https://<supabase-url>/storage/v1/object/public/food-images/..." // Optional
+  }
+  ```
+- **Response**: Text stream response (chunked transfer encoding) containing Baymax's streaming text.
+- **Side Effects**: Automatically saves extracted memories to `agent_memory` in the background via non-blocking `onFinish`. If an `imageUrl` is present, logs meal entry to `nutrition_logs` and `meal_analysis`.
+
+### 2. Meal Logging (`logMealAction(formData: FormData)`)
+- **Inputs**:
+  - `text`: string (optional food description)
+  - `image`: File (optional image file, max 5MB, JPEG/PNG/WEBP/GIF)
+  - `mealType`: `'breakfast' | 'lunch' | 'dinner' | 'snack'`
+- **Returns**: `{ success: boolean, data: NutritionAnalysis }`
+
+### 3. Diet Plan Generation (`generateDietPlanAction(preference, variationSalt)`)
+- **Inputs**:
+  - `preference`: `'veg' | 'non-veg' | 'mix'`
+  - `variationSalt`: string (optional random seed to trigger varied recipes)
+- **Returns**: `DietPlanResult` containing `meals[]`, `nutrition_summary`, and `ai_notes`.
+
+### 4. Profile Update (`updateProfile(data: ProfileUpdateData)`)
+- **Inputs**:
+  - `full_name`, `age`, `height_cm`, `gender`, `activity_level`, `current_weight_kg`, `weight_goal_kg`, `goal_type`, `daily_water_target_ml`
+- **Returns**: `{ success: boolean }`
+- **Side Effects**: Runs Mifflin-St Jeor engine, updates `profiles` and `health_goals`, triggers Gemini health coaching generation, and revalidates paths.
+
+### 5. Hydration Actions
+- `addWaterIntake(amountMl: number)`: Inserts water log entry and revalidates dashboard.
+- `deleteWaterLog(id: string)`: Removes water log entry owned by authenticated user.
+- `getTodayWater()`: Returns total ml consumed today in the user's specific timezone.
+- `getWaterStreak()`: Returns `{ currentStreak: number, bestStreak: number }`.
+- `getWeeklyWaterAnalytics()`: Returns 7-day array `[{ name: 'Mon', amount: 2400 }, ...]`.
+- `getWaterCoachingAndInsightsAction(currentMl, goalMl, isWorkoutDay)`: Returns `{ coachAdvice: string, insights: string }` generated by Gemini.
+
+### 6. RAG Document Ingestion (`uploadKnowledgeDocument(formData: FormData)`)
+- **Inputs**: `file`: PDF File ($\le 10\text{MB}$)
+- **Returns**: `{ success: boolean, chunkCount: number }`
+- **Side Effects**: Extracts text, chunks into 1000-char segments, generates 768-dim embeddings, and writes to `knowledge_documents` and `document_chunks`.
+
+---
+
+## 9. ENVIRONMENT VARIABLES, SETUP & DATABASE INITIALIZATION
+
+### Environment Variables (`.env.local`)
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+# Google Gemini API Configuration
+GEMINI_API_KEY=AIzaSy...your-gemini-api-key
+
+# Upstash Redis Configuration (Rate Limiting)
+KV_REST_API_URL=https://your-redis-instance.upstash.io
+KV_REST_API_TOKEN=your-upstash-redis-token
+
+# Site Origin Setting
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+### Local Development Setup Commands
+
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Run Database Migrations**:
+   Open the Supabase SQL Editor and execute the complete script located in `supabase/init_database.sql`. This sets up:
+   - Tables (`profiles`, `health_goals`, `nutrition_logs`, `meal_analysis`, `water_logs`, `agent_memory`, `knowledge_documents`, `document_chunks`)
+   - `pgvector` extension and cosine similarity search function (`match_document_chunks`)
+   - Automated signup profile creation trigger (`handle_new_user`)
+   - Storage bucket `food-images` with RLS policies
+
+3. **Start Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:3000` to start using Agent Baymax.
+
+4. **Production Build & Type Check**:
+   ```bash
+   npm run build
+   ```
+
+---
+
+*Document compiled autonomously for the Agent Baymax project.*
